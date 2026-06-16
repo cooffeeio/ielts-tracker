@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1E3A5F" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="IELTSTracker" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>IELTS Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      min-height: 100dvh;
+      background: #F8FAFC;
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Helvetica Neue', sans-serif;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+      padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    }
+    select, input, textarea, button { font-family: inherit; }
+    textarea { resize: vertical; }
+
+    /* ── Header ── */
+    #header {
+      background: #fff;
+      border-bottom: 1px solid #E2E8F0;
+      position: sticky; top: 0; z-index: 100;
+      padding-top: env(safe-area-inset-top);
+    }
+    #header-inner {
+      max-width: 600px; margin: 0 auto;
+      padding: 0 20px;
+      display: flex; align-items: center; height: 52px;
+    }
+    #logo { font-weight: 900; color: #1E3A5F; font-size: 17px; letter-spacing: -.5px; }
+    #logo span { color: #2563EB; }
+
+    /* ── Content ── */
+    #content { max-width: 600px; margin: 0 auto; padding: 20px 16px 16px; }
+
+    /* ── Bottom Tab ── */
+    #tabbar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      background: rgba(255,255,255,.93);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(0,0,0,.08);
+      padding-bottom: env(safe-area-inset-bottom);
+      display: flex;
+    }
+    #tabbar-inner { max-width: 600px; margin: 0 auto; width: 100%; display: flex; }
+    .tab-btn {
+      flex: 1; padding: 10px 0 8px; border: none; background: transparent;
+      cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    }
+    .tab-btn .emoji { font-size: 22px; }
+    .tab-btn .label { font-size: 10px; color: #94A3B8; }
+    .tab-btn.active .label { color: #2563EB; font-weight: 700; }
+    .tab-dot { width: 4px; height: 4px; border-radius: 2px; background: #2563EB; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border-radius: 16px;
+      padding: 20px; border: 1px solid #E2E8F0; margin-bottom: 16px;
+    }
+    .card-title { font-weight: 700; color: #1E3A5F; font-size: 15px; margin-bottom: 16px; }
+
+    /* ── Hero ── */
+    #hero {
+      background: linear-gradient(135deg,#1E3A5F 0%,#2563EB 100%);
+      border-radius: 20px; padding: 28px 24px 32px;
+      margin-bottom: 16px; color: #fff;
+      box-shadow: 0 8px 32px rgba(37,99,235,.25);
+    }
+    #hero-label { font-size: 11px; opacity: .65; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+    #hero-score { font-size: 80px; font-weight: 800; line-height: 1; letter-spacing: -3px; }
+    #hero-denom { font-size: 18px; opacity: .6; margin-bottom: 20px; }
+    .band-bar { position: relative; height: 12px; background: rgba(255,255,255,.2); border-radius: 6px; margin-bottom: 8px; }
+    .band-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(255,255,255,.85); border-radius: 6px; transition: width .4s; }
+    .band-marker { position: absolute; top: -4px; transform: translateX(-50%); }
+    .band-marker-line { width: 2px; height: 20px; background: rgba(255,255,255,.5); border-radius: 1px; }
+    .band-marker-label { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 9px; color: rgba(255,255,255,.6); white-space: nowrap; }
+    #hero-secs { display: flex; justify-content: space-between; margin-top: 20px; gap: 8px; }
+    .hero-sec { flex: 1 1 0; }
+    .hero-sec-label { font-size: 10px; opacity: .55; margin-bottom: 2px; }
+    .hero-sec-score { font-size: 26px; font-weight: 700; }
+    .hero-sec-bar { height: 3px; background: rgba(255,255,255,.2); border-radius: 2px; margin-top: 4px; }
+    .hero-sec-fill { height: 100%; background: #fff; border-radius: 2px; transition: width .4s; }
+
+    /* ── Mini stats ── */
+    #mini-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: #fff; border-radius: 14px; padding: 16px 18px; border: 1px solid #E2E8F0; }
+    .stat-label { font-size: 11px; color: #94A3B8; margin-bottom: 4px; }
+    .stat-value { font-size: 30px; font-weight: 800; color: #1E3A5F; letter-spacing: -1px; }
+    .stat-unit { font-size: 12px; font-weight: 400; color: #94A3B8; margin-left: 3px; }
+
+    /* ── SVG Chart ── */
+    #chart-wrap { overflow-x: auto; }
+    .chart-svg { display: block; }
+    .chart-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #64748B; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Form ── */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .form-group { margin-bottom: 16px; }
+    label.flabel { font-size: 12px; font-weight: 600; color: #64748B; margin-bottom: 7px; display: block; }
+    .finput {
+      width: 100%; border: 1.5px solid #E2E8F0; border-radius: 10px;
+      padding: 11px 14px; font-size: 15px; color: #1E3A5F;
+      background: #F8FAFC; outline: none; -webkit-appearance: none;
+    }
+    .finput-lg { font-size: 18px; font-weight: 700; }
+    .sub-box { background: #F8FAFC; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #E2E8F0; }
+    .sub-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+    .sub-label { font-size: 12px; font-weight: 600; color: #64748B; margin-bottom: 4px; }
+
+    /* ── Tags ── */
+    .tag-cloud { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
+    .tag-btn {
+      padding: 6px 13px; border-radius: 20px; font-size: 12px;
+      cursor: pointer; border: none; background: #F1F5F9; color: #64748B;
+      transition: all .15s;
+    }
+    .tag-btn.on { color: #fff; font-weight: 700; }
+    .tag-add-row { display: flex; gap: 8px; }
+    .tag-add-btn {
+      padding: 11px 16px; background: #2563EB; color: #fff;
+      border: none; border-radius: 10px; font-size: 13px;
+      cursor: pointer; font-weight: 600; white-space: nowrap;
+    }
+
+    /* ── Radar (SVG) ── */
+    .radar-wrap { margin-top: 14px; display: flex; justify-content: center; }
+
+    /* ── Save button ── */
+    #save-btn {
+      width: 100%; padding: 16px;
+      background: linear-gradient(135deg,#1E3A5F,#2563EB);
+      color: #fff; border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(37,99,235,.3);
+      transition: background .25s;
+    }
+    #save-btn.saved { background: #10B981; }
+
+    /* ── Checkbox ── */
+    .check-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .check-row input { width: 20px; height: 20px; accent-color: #2563EB; cursor: pointer; }
+    .check-row label { font-size: 15px; color: #1E3A5F; cursor: pointer; }
+
+    /* ── Review filter ── */
+    .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 5px 12px; border-radius: 20px; font-size: 12px;
+      cursor: pointer; border: 1px solid #E2E8F0;
+      background: transparent; color: #64748B; transition: all .15s;
+    }
+    .filter-btn.on { background: #2563EB; border-color: #2563EB; color: #fff; }
+
+    /* ── Review cards ── */
+    .review-item { border: 1px solid #E2E8F0; border-radius: 14px; padding: 16px; background: #FAFCFF; margin-bottom: 12px; }
+    .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px; }
+    .sec-badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; color: #fff; }
+    .review-date { font-size: 11px; color: #94A3B8; }
+    .review-band { font-size: 20px; font-weight: 800; }
+    .review-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+    .review-tag { font-size: 11px; padding: 2px 9px; border-radius: 20px; font-weight: 600; }
+    .review-texts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .review-text-box { border-radius: 8px; padding: 10px 12px; }
+    .review-text-label { font-size: 10px; font-weight: 700; color: #64748B; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
+    .review-text-content { font-size: 12px; color: #1E3A5F; line-height: 1.65; }
+
+    /* ── Empty states ── */
+    .empty { text-align: center; color: #94A3B8; padding: 48px 0; font-size: 14px; }
+    .empty-emoji { font-size: 36px; margin-bottom: 10px; }
+
+    /* ── Tag analysis ── */
+    .tag-bars { display: flex; flex-direction: column; gap: 8px; }
+    .tag-bar-row { display: flex; align-items: center; gap: 8px; }
+    .tag-bar-label { font-size: 11px; color: #64748B; width: 90px; flex-shrink: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tag-bar-track { flex: 1; height: 18px; background: #F1F5F9; border-radius: 9px; overflow: hidden; }
+    .tag-bar-fill { height: 100%; border-radius: 9px; transition: width .4s; }
+    .tag-bar-count { font-size: 11px; font-weight: 700; color: #1E3A5F; width: 24px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <div id="header-inner">
+    <div id="logo">IELTS<span>Tracker</span></div>
+  </div>
+</div>
+
+<div id="content"></div>
+
+<div id="tabbar">
+  <div id="tabbar-inner">
+    <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">
+      <span class="emoji">📊</span><span class="label">Dashboard</span>
+      <div class="tab-dot"></div>
+    </button>
+    <button class="tab-btn" data-tab="log" onclick="switchTab('log')">
+      <span class="emoji">✏️</span><span class="label">Log</span>
+    </button>
+    <button class="tab-btn" data-tab="review" onclick="switchTab('review')">
+      <span class="emoji">🔍</span><span class="label">Review</span>
+    </button>
+  </div>
+</div>
+
+<script>
+// ── Service Worker ────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+
+// ── 定数 ──────────────────────────────────────────────
+const SECTIONS    = ['Listening','Reading','Writing','Speaking'];
+const BAND_SCORES = Array.from({length:19},(_,i)=>(i*0.5).toFixed(1));
+const FIXED_TAGS  = ['語彙不足','文法エラー','パラフレーズ見落とし','タイムマネジメント',
+  '発音・流暢さ','スペルミス','論理構成','スキャニング不足','ディテール聞き逃し','接続詞の誤用'];
+const SPEAKING_SUB = ['流暢さ・一貫性','語彙力','文法の幅と正確さ','発音'];
+const WRITING_SUB  = ['タスク達成度','一貫性・結束性','語彙力','文法の幅と正確さ'];
+const SEC_COLOR = {
+  Listening:'#2563EB', Reading:'#10B981',
+  Writing:'#F59E0B',   Speaking:'#8B5CF6', Overall:'#1E3A5F'
+};
+const TAG_COLORS = ['#2563EB','#10B981','#F59E0B','#8B5CF6','#EF4444',
+  '#06B6D4','#EC4899','#84CC16','#F97316','#6366F1'];
+
+// ── State ─────────────────────────────────────────────
+function load(k, def) {
+  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch { return def; }
+}
+function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+
+let entries    = load('ielts_entries', []);
+let customTags = load('ielts_tags', []);
+let currentTab = 'dashboard';
+let reviewFilter = 'all';
+let formState = null;
+
+// ── Helpers ───────────────────────────────────────────
+function calcOverall(L,R,W,S) {
+  return Math.round((+L + +R + +W + +S) / 4 / 0.5) * 0.5;
+}
+function getSessions() {
+  const byDate = {};
+  entries.forEach(e => {
+    if (!byDate[e.date]) byDate[e.date] = {};
+    byDate[e.date][e.section] = +e.bandScore;
+  });
+  return Object.entries(byDate)
+    .filter(([,s]) => SECTIONS.every(k => s[k] != null))
+    .sort(([a],[b]) => a.localeCompare(b))
+    .map(([date,s]) => ({
+      date: date.slice(5),
+      Listening:s.Listening, Reading:s.Reading,
+      Writing:s.Writing,     Speaking:s.Speaking,
+      Overall: calcOverall(s.Listening,s.Reading,s.Writing,s.Speaking)
+    }));
+}
+function getTagFreq() {
+  const all = [...FIXED_TAGS, ...customTags], freq = {};
+  all.forEach(t => { freq[t] = 0; });
+  entries.forEach(e => e.errorTags.forEach(t => { freq[t] = (freq[t]||0)+1; }));
+  return Object.entries(freq).filter(([,v])=>v>0)
+    .sort((a,b)=>b[1]-a[1]).map(([tag,count])=>({tag,count}));
+}
+
+// ── SVG Line Chart ────────────────────────────────────
+function renderLineChart(sessions) {
+  if (!sessions.length) {
+    return `<div class="empty"><div class="empty-emoji">📈</div>L / R / W / S を同日に記録するとグラフが表示されます</div>`;
+  }
+  const W = Math.min(window.innerWidth - 64, 536);
+  const H = 200, PL = 30, PR = 8, PT = 10, PB = 30;
+  const cw = W - PL - PR, ch = H - PT - PB;
+  const keys = [...SECTIONS, 'Overall'];
+  const allVals = sessions.flatMap(s => keys.map(k => s[k]));
+  const minV = 4, maxV = 9;
+  const xScale = i => PL + (i / (sessions.length - 1 || 1)) * cw;
+  const yScale = v => PT + ch - ((v - minV) / (maxV - minV)) * ch;
+
+  let svg = `<svg class="chart-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  // grid
+  [4,5,6,7,8,9].forEach(v => {
+    const y = yScale(v);
+    svg += `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#F1F5F9" stroke-width="1"/>`;
+    svg += `<text x="${PL-4}" y="${y+4}" font-size="9" fill="#94A3B8" text-anchor="end">${v}</text>`;
+  });
+  // x labels
+  sessions.forEach((s,i) => {
+    svg += `<text x="${xScale(i)}" y="${H-4}" font-size="9" fill="#94A3B8" text-anchor="middle">${s.date}</text>`;
+  });
+  // lines
+  keys.forEach(k => {
+    const pts = sessions.map((s,i) => `${xScale(i)},${yScale(s[k])}`).join(' ');
+    const stroke = SEC_COLOR[k];
+    const sw = k==='Overall' ? 3 : 2;
+    const dash = k==='Overall' ? 'stroke-dasharray="6 2"' : '';
+    svg += `<polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" ${dash}/>`;
+    sessions.forEach((s,i) => {
+      svg += `<circle cx="${xScale(i)}" cy="${yScale(s[k])}" r="${k==='Overall'?4:3}" fill="${stroke}"/>`;
+    });
+  });
+  svg += `</svg>`;
+
+  const legend = keys.map(k =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${SEC_COLOR[k]}"></div>${k}</div>`
+  ).join('');
+
+  return svg + `<div class="chart-legend">${legend}</div>`;
+}
+
+// ── SVG Radar Chart ───────────────────────────────────
+function renderRadar(subKeys, subScores) {
+  const n = subKeys.length;
+  const cx = 100, cy = 90, r = 70;
+  const angles = subKeys.map((_,i) => (i / n) * 2 * Math.PI - Math.PI/2);
+  const pt = (val, angle) => ({
+    x: cx + (val/9)*r*Math.cos(angle),
+    y: cy + (val/9)*r*Math.sin(angle)
+  });
+  let svg = `<svg width="200" height="180" viewBox="0 0 200 180">`;
+  [3,6,9].forEach(v => {
+    const pts = angles.map(a => pt(v,a));
+    svg += `<polygon points="${pts.map(p=>p.x+','+p.y).join(' ')}" fill="none" stroke="#E2E8F0" stroke-width="1"/>`;
+  });
+  const valuePts = angles.map((a,i) => pt(+subScores[subKeys[i]], a));
+  svg += `<polygon points="${valuePts.map(p=>p.x+','+p.y).join(' ')}" fill="#2563EB" fill-opacity=".15" stroke="#2563EB" stroke-width="2"/>`;
+  valuePts.forEach(p => { svg += `<circle cx="${p.x}" cy="${p.y}" r="3" fill="#2563EB"/>`; });
+  angles.forEach((a,i) => {
+    const lp = pt(9.8, a);
+    const short = subKeys[i].replace(/・/g,'/').replace('流暢さ/一貫性','流暢さ').replace('文法の幅と正確さ','文法');
+    svg += `<text x="${lp.x}" y="${lp.y+4}" font-size="9" fill="#64748B" text-anchor="middle">${short}</text>`;
+  });
+  svg += `</svg>`;
+  return svg;
+}
+
+// ── Tab Switch ────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    const isActive = btn.dataset.tab === tab;
+    btn.classList.toggle('active', isActive);
+    const dot = btn.querySelector('.tab-dot');
+    if (dot) dot.remove();
+    if (isActive) {
+      const d = document.createElement('div');
+      d.className = 'tab-dot';
+      btn.appendChild(d);
+    }
+  });
+  render();
+}
+
+// ── Render: Dashboard ────────────────────────────────
+function renderDashboard() {
+  const sessions   = getSessions();
+  const recent3    = sessions.slice(-3);
+  const avgOverall = recent3.length
+    ? (recent3.reduce((s,r)=>s+r.Overall,0)/recent3.length).toFixed(1) : null;
+  const avgSec = {};
+  SECTIONS.forEach(s => {
+    const v = recent3.map(r=>r[s]).filter(Boolean);
+    avgSec[s] = v.length ? (v.reduce((a,b)=>a+b,0)/v.length).toFixed(1) : null;
+  });
+
+  const pct = v => v ? ((+v/9)*100).toFixed(1)+'%' : '0%';
+
+  const heroSecs = SECTIONS.map(s => `
+    <div class="hero-sec">
+      <div class="hero-sec-label">${s[0]}</div>
+      <div class="hero-sec-score">${avgSec[s]??'—'}</div>
+      <div class="hero-sec-bar"><div class="hero-sec-fill" style="width:${pct(avgSec[s])}"></div></div>
+    </div>`).join('');
+
+  const miniStats = [
+    {label:'総記録数', value:entries.length, unit:'件'},
+    {label:'要復習',   value:entries.filter(e=>e.needsReview).length, unit:'件'},
+    {label:'受験回数', value:sessions.length, unit:'回'},
+    {label:'目標まで', value:avgOverall?Math.max(0,6.5-(+avgOverall)).toFixed(1):'—', unit:'バンド'},
+  ].map(({label,value,unit}) => `
+    <div class="stat-card">
+      <div class="stat-label">${label}</div>
+      <div class="stat-value">${value}<span class="stat-unit">${unit}</span></div>
+    </div>`).join('');
+
+  return `
+    <div id="hero">
+      <div id="hero-label">直近3回の平均 Overall</div>
+      <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:20px">
+        <div id="hero-score">${avgOverall??'—'}</div>
+        <div id="hero-denom">/ 9.0</div>
+      </div>
+      <div class="band-bar">
+        <div class="band-fill" style="width:${pct(avgOverall)}"></div>
+        <div class="band-marker" style="left:${(6.5/9*100).toFixed(1)}%">
+          <div class="band-marker-line"></div><div class="band-marker-label">6.5</div>
+        </div>
+        <div class="band-marker" style="left:${(8.0/9*100).toFixed(1)}%">
+          <div class="band-marker-line"></div><div class="band-marker-label">8.0</div>
+        </div>
+      </div>
+      <div id="hero-secs">${heroSecs}</div>
+    </div>
+    <div id="mini-stats">${miniStats}</div>
+    <div class="card">
+      <div class="card-title">スコア推移</div>
+      <div id="chart-wrap">${renderLineChart(sessions)}</div>
+    </div>`;
+}
+
+// ── Render: Log Entry ─────────────────────────────────
+function initForm() {
+  return {
+    date: new Date().toISOString().slice(0,10),
+    section: 'Listening', bandScore: '6.0',
+    subScores: {}, errorTags: [], myAnswer: '', correction: '', needsReview: false
+  };
+}
+if (!formState) formState = initForm();
+
+function renderLog() {
+  const f = formState;
+  const allTags = [...FIXED_TAGS, ...customTags];
+  const subKeys = f.section==='Speaking'?SPEAKING_SUB:f.section==='Writing'?WRITING_SUB:[];
+
+  const sectionOpts = SECTIONS.map(s=>`<option${s===f.section?' selected':''}>${s}</option>`).join('');
+  const bandOpts    = BAND_SCORES.map(s=>`<option value="${s}"${s===f.bandScore?' selected':''}>${s}</option>`).join('');
+
+  const tags = allTags.map((tag,i) => {
+    const on = f.errorTags.includes(tag);
+    const bg = on ? TAG_COLORS[i%TAG_COLORS.length] : '#F1F5F9';
+    return `<button class="tag-btn${on?' on':''}" style="${on?'background:'+bg:''}" onclick="toggleTag('${tag.replace(/'/g,"\\'")}',${i})">${tag}</button>`;
+  }).join('');
+
+  let subHtml = '';
+  if (subKeys.length) {
+    const selects = subKeys.map(k=>`
+      <div>
+        <div class="sub-label">${k}</div>
+        <select class="finput" style="font-size:13px" onchange="setSubScore('${k}',this.value)">
+          <option value="">—</option>
+          ${BAND_SCORES.map(s=>`<option value="${s}"${f.subScores[k]===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>`).join('');
+    const allFilled = subKeys.every(k=>f.subScores[k]);
+    const radarHtml = allFilled ? `<div class="radar-wrap">${renderRadar(subKeys,f.subScores)}</div>` : '';
+    subHtml = `<div class="sub-box"><div class="sub-label" style="margin-bottom:12px">内部スコア（任意）</div><div class="sub-grid">${selects}</div>${radarHtml}</div>`;
+  }
+
+  return `
+    <div class="card">
+      <div style="font-weight:800;color:#1E3A5F;font-size:17px;margin-bottom:20px">学習・スコア記録</div>
+      <div class="form-row">
+        <div>
+          <label class="flabel">日付</label>
+          <input type="date" class="finput" value="${f.date}" onchange="setField('date',this.value)">
+        </div>
+        <div>
+          <label class="flabel">セクション</label>
+          <select class="finput" onchange="setSection(this.value)">${sectionOpts}</select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="flabel">バンドスコア（${f.section}）</label>
+        <select class="finput finput-lg" onchange="setField('bandScore',this.value)">${bandOpts}</select>
+      </div>
+      ${subHtml}
+      <div class="form-group">
+        <label class="flabel">エラー原因タグ</label>
+        <div class="tag-cloud">${tags}</div>
+        <div class="tag-add-row">
+          <input id="new-tag-input" class="finput" style="flex:1" placeholder="タグを追加… (Enter)"
+            onkeydown="if(event.key==='Enter')addCustomTag()">
+          <button class="tag-add-btn" onclick="addCustomTag()">追加</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="flabel">間違えた問題 / 自分の解答</label>
+        <textarea class="finput" rows="4" placeholder="例：Q32で 'Thursday' と答えたが…" onchange="setField('myAnswer',this.value)">${f.myAnswer}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="flabel">正答 / 添削・改善案</label>
+        <textarea class="finput" rows="4" placeholder="例：正解は 'Tuesday'。曜日は聞いた瞬間に書く。" onchange="setField('correction',this.value)">${f.correction}</textarea>
+      </div>
+      <div class="check-row">
+        <input type="checkbox" id="rev-check" ${f.needsReview?'checked':''} onchange="setField('needsReview',this.checked)">
+        <label for="rev-check">復習が必要</label>
+      </div>
+      <button id="save-btn" onclick="saveEntry()">保存する</button>
+    </div>`;
+}
+
+// ── Render: Review ────────────────────────────────────
+function renderReview() {
+  const tagData = getTagFreq();
+  const reviewed = entries.filter(e=>e.needsReview);
+  const filtered = reviewFilter==='all' ? reviewed : reviewed.filter(e=>e.section===reviewFilter);
+
+  // Tag bars
+  let tagHtml = '';
+  if (!tagData.length) {
+    tagHtml = `<div class="empty"><div class="empty-emoji">🏷️</div>エラータグを記録するとここに集計されます</div>`;
+  } else {
+    const max = tagData[0].count;
+    const bars = tagData.slice(0,8).map(({tag,count},i)=>`
+      <div class="tag-bar-row">
+        <div class="tag-bar-label" title="${tag}">${tag}</div>
+        <div class="tag-bar-track">
+          <div class="tag-bar-fill" style="width:${(count/max*100).toFixed(0)}%;background:${TAG_COLORS[i%TAG_COLORS.length]}"></div>
+        </div>
+        <div class="tag-bar-count">${count}</div>
+      </div>`).join('');
+    tagHtml = `<div class="tag-bars">${bars}</div>`;
+  }
+
+  // Filter buttons
+  const filterBtns = ['all',...SECTIONS].map(s=>`
+    <button class="filter-btn${reviewFilter===s?' on':''}" onclick="setReviewFilter('${s}')">
+      ${s==='all'?'すべて':s[0]}
+    </button>`).join('');
+
+  // Review items
+  let itemsHtml = '';
+  if (!filtered.length) {
+    const msg = reviewed.length===0
+      ? '「復習が必要」をオンにした記録がここに表示されます'
+      : 'このセクションの要復習記録はありません';
+    itemsHtml = `<div class="empty"><div class="empty-emoji">${reviewed.length===0?'📝':'🎉'}</div>${msg}</div>`;
+  } else {
+    itemsHtml = [...filtered].reverse().map(e => {
+      const tags = e.errorTags.map((t,i)=>
+        `<span class="review-tag" style="background:${TAG_COLORS[i%TAG_COLORS.length]}20;color:${TAG_COLORS[i%TAG_COLORS.length]}">${t}</span>`
+      ).join('');
+      const textBoxes = [
+        {label:'自分の解答',  content:e.myAnswer,   bg:'#FEF9C3'},
+        {label:'添削・改善案',content:e.correction, bg:'#DCFCE7'},
+      ].filter(b=>b.content).map(b=>
+        `<div class="review-text-box" style="background:${b.bg}">
+          <div class="review-text-label">${b.label}</div>
+          <div class="review-text-content">${b.content.replace(/</g,'&lt;')}</div>
+        </div>`
+      ).join('');
+      return `
+        <div class="review-item">
+          <div class="review-header">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="sec-badge" style="background:${SEC_COLOR[e.section]}">${e.section}</span>
+              <span class="review-date">${e.date}</span>
+            </div>
+            <span class="review-band" style="color:${SEC_COLOR[e.section]}">Band ${e.bandScore}</span>
+          </div>
+          ${tags?`<div class="review-tags">${tags}</div>`:''}
+          <div class="review-texts">${textBoxes}</div>
+        </div>`;
+    }).join('');
+  }
+
+  return `
+    <div class="card">
+      <div class="card-title">弱点タグ分析</div>
+      ${tagHtml}
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div class="card-title" style="margin:0">要復習リスト <span style="font-weight:400;color:#94A3B8;font-size:13px">(${filtered.length}件)</span></div>
+        <div class="filter-row">${filterBtns}</div>
+      </div>
+      ${itemsHtml}
+    </div>`;
+}
+
+// ── Main Render ───────────────────────────────────────
+function render() {
+  const el = document.getElementById('content');
+  if (currentTab==='dashboard')  el.innerHTML = renderDashboard();
+  else if (currentTab==='log')   el.innerHTML = renderLog();
+  else if (currentTab==='review') el.innerHTML = renderReview();
+}
+
+// ── Actions ───────────────────────────────────────────
+function setField(key, val) { formState[key] = val; }
+function setSection(val) { formState.section = val; formState.subScores = {}; render(); }
+function setSubScore(key, val) { formState.subScores[key] = val; render(); }
+
+function toggleTag(tag, i) {
+  const idx = formState.errorTags.indexOf(tag);
+  if (idx>=0) formState.errorTags.splice(idx,1);
+  else formState.errorTags.push(tag);
+  render();
+}
+
+function addCustomTag() {
+  const input = document.getElementById('new-tag-input');
+  if (!input) return;
+  const t = input.value.trim();
+  const allTags = [...FIXED_TAGS,...customTags];
+  if (t && !allTags.includes(t)) {
+    customTags.push(t);
+    save('ielts_tags', customTags);
+    formState.errorTags.push(t);
+  }
+  render();
+}
+
+function saveEntry() {
+  // sync textarea values before save
+  const f = formState;
+  const ta1 = document.querySelector('textarea:nth-of-type(1)');
+  const ta2 = document.querySelector('textarea:nth-of-type(2)');
+  if (ta1) f.myAnswer   = ta1.value;
+  if (ta2) f.correction = ta2.value;
+
+  entries.push({ ...f, id: Date.now() });
+  save('ielts_entries', entries);
+
+  formState = initForm();
+  const btn = document.getElementById('save-btn');
+  if (btn) { btn.textContent='✓ 保存しました'; btn.classList.add('saved'); }
+  setTimeout(() => render(), 1500);
+}
+
+function setReviewFilter(f) {
+  reviewFilter = f;
+  render();
+}
+
+// ── Boot ──────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
